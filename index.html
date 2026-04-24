@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Магазин услуг</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f4f6f8;
+      --text: #1f2937;
+      --card: #ffffff;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --accent: #3390ec;
+      --accent-text: #ffffff;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 20px 16px 28px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 24px;
+    }
+
+    .subtitle {
+      margin: 0 0 18px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .service-name {
+      font-weight: 600;
+      font-size: 16px;
+    }
+
+    .service-description {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 10px 14px;
+      background: var(--accent);
+      color: var(--accent-text);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .date-wrap {
+      margin: 20px 0 16px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    input[type="date"] {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: transparent;
+      color: var(--text);
+      padding: 10px 12px;
+      font-size: 15px;
+    }
+
+    .hint {
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <h1>Магазин услуг</h1>
+    <p class="subtitle">Выберите услугу и дату, затем нажмите "Выбрать".</p>
+
+    <section id="services"></section>
+
+    <div class="date-wrap">
+      <label for="bookingDate">Дата услуги</label>
+      <input id="bookingDate" type="date" />
+      <div class="hint">Дата будет отправлена боту вместе с выбранной услугой.</div>
+    </div>
+  </main>
+
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
+
+    const theme = tg.themeParams || {};
+    const root = document.documentElement;
+    if (theme.bg_color) root.style.setProperty("--bg", theme.bg_color);
+    if (theme.text_color) root.style.setProperty("--text", theme.text_color);
+    if (theme.hint_color) root.style.setProperty("--muted", theme.hint_color);
+    if (theme.secondary_bg_color) root.style.setProperty("--card", theme.secondary_bg_color);
+    if (theme.button_color) root.style.setProperty("--accent", theme.button_color);
+    if (theme.button_text_color) root.style.setProperty("--accent-text", theme.button_text_color);
+
+    const services = [
+      { id: "consultation", title: "Консультация", description: "30 минут общения со специалистом" },
+      { id: "setup", title: "Настройка бота", description: "Базовая настройка под ваш сценарий" },
+      { id: "support", title: "Техподдержка", description: "Помощь и сопровождение 24/7" }
+    ];
+
+    const servicesContainer = document.getElementById("services");
+    const bookingDateInput = document.getElementById("bookingDate");
+
+    const today = new Date().toISOString().split("T")[0];
+    bookingDateInput.min = today;
+    bookingDateInput.value = today;
+
+    services.forEach((service) => {
+      const card = document.createElement("article");
+      card.className = "card";
+      card.innerHTML = `
+        <div>
+          <div class="service-name">${service.title}</div>
+          <div class="service-description">${service.description}</div>
+        </div>
+        <button type="button" data-service-id="${service.id}" data-service-name="${service.title}">Выбрать</button>
+      `;
+      servicesContainer.appendChild(card);
+    });
+
+    servicesContainer.addEventListener("click", (event) => {
+      const btn = event.target.closest("button[data-service-id]");
+      if (!btn) return;
+
+      const date = bookingDateInput.value;
+      if (!date) {
+        tg.showAlert("Выберите дату услуги");
+        return;
+      }
+
+      const payload = {
+        action: "book_service",
+        service_id: btn.dataset.serviceId,
+        service_name: btn.dataset.serviceName,
+        date: date
+      };
+
+      tg.sendData(JSON.stringify(payload));
+      tg.close();
+    });
+  </script>
+</body>
+</html>
